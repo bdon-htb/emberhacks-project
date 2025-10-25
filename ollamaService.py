@@ -1,16 +1,19 @@
 import json
-import asyncio
 import httpx
 from fastapi import FastAPI
-from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
+import os
 
-app = FastAPI(title="Ollama Backend (httpx + Async Stream)")
+app = FastAPI(title="Gemini Backend (httpx + Async Stream)")
 
-# Ollama local API endpoint
-OLLAMA_API_URL = "http://localhost:11434/api/generate"
+# 你的 Gemini API key —— 推荐放环境变量
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "<YOUR_GEMINI_API_KEY>")
+GEMINI_API_URL = (
+    "https://generativelanguage.googleapis.com/v1beta/models/"
+    "gemini-2.0-flash:generateContent"
+)
 
-# Simple in-memory conversation store
 conversation_history: list[str] = []
 
 
@@ -21,88 +24,59 @@ class GenerateRequest(BaseModel):
     max_tokens: int = 512
 
 
-def build_payload(req: GenerateRequest, system_prompt: str, think_mode: bool):
-    """Construct full prompt with context and mode"""
-    context = "\n".join(conversation_history[-10:])  # keep last 10 exchanges
-    suffix = "/think" if think_mode else "/no_think"
-
-    full_prompt = f"{system_prompt}\n\nContext:\n{context}\n\nUser: {req.prompt.strip()} {suffix}"
-
-    payload = {
-        "model": "qwen3:1.7b",
-        "prompt": full_prompt,
-        "stream": True,
-        "options": {
+def build_payload(req: GenerateRequest, system_prompt: str):
+    """构建 Gemini 请求体"""
+    context = "\n".join(conversation_history[-10:])
+    full_prompt = f"{system_prompt}\n\nContext:\n{context}\n\nUser: {req.prompt.strip()}"
+    return {
+        "contents": [{"parts": [{"text": full_prompt}]}],
+        "generationConfig": {
             "temperature": req.temperature,
-            "num_predict": req.max_tokens,
-        },
+            "maxOutputTokens": req.max_tokens
+        }
     }
-    return payload
 
 
-async def stream_ollama_async(payload):
-    """Async generator that yields streaming tokens from Ollama"""
-    async with httpx.AsyncClient(timeout=None) as client:
-        async with client.stream("POST", OLLAMA_API_URL, json=payload) as resp:
-            async for line in resp.aiter_lines():
-                if not line:
-                    continue
-                try:
-                    data = json.loads(line)
-                    if "response" in data:
-                        yield data["response"]
-                except json.JSONDecodeError:
-                    continue
+async def call_gemini_api(payload):
+    """直接调用 Gemini API（非流式）"""
+    url = f"{GEMINI_API_URL}?key={GEMINI_API_KEY}"
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(url, headers={"Content-Type": "application/json"}, json=payload)
+    if resp.status_code != 200:
+        raise RuntimeError(f"Gemini API error {resp.status_code}: {resp.text}")
+    data = resp.json()
+    # 提取回答
+    try:
+        return data["candidates"][0]["content"]["parts"][0]["text"]
+    except Exception:
+        return json.dumps(data, ensure_ascii=False, indent=2)
 
 
 @app.post("/generate")
 async def generate(req: GenerateRequest):
-    """Handle both task types: 'solve' (think) or 'concept' (no_think)"""
+    """根据 task_type 调用 Gemini"""
+    if not GEMINI_API_KEY or GEMINI_API_KEY.startswith("<"):
+        return JSONResponse({"error": "Missing or invalid API key"}, status_code=400)
 
-    # Select mode
     if req.task_type == "solve":
         system_prompt = (
             "You are a logical problem solver. Think step by step and reason carefully before answering."
         )
-        think_mode = True
-
-        payload = build_payload(req, system_prompt, think_mode)
-        result = []
-
-        # Collect stream asynchronously
-        async for chunk in stream_ollama_async(payload):
-            print(chunk)
-            result.append(chunk)
-
-        final_output = "".join(result).strip()
-        conversation_history.append(f"User: {req.prompt}")
-        conversation_history.append(f"AI: {final_output}")
-
-        return JSONResponse({"result": final_output})
-
     elif req.task_type == "concept":
         system_prompt = "You are a concise and clear teacher. Explain simply and directly."
-        think_mode = False
-        payload = build_payload(req, system_prompt, think_mode)
-        conversation_history.append(f"User: {req.prompt}")
-
-        async def stream_response():
-            output = ""
-            async for chunk in stream_ollama_async(payload):
-                print(chunk)
-                output += chunk
-                yield chunk
-            conversation_history.append(f"AI: {output.strip()}")
-
-        return StreamingResponse(stream_response(), media_type="text/plain")
-
     else:
-        return JSONResponse(
-            {"error": "Invalid task_type. Use 'solve' or 'concept'."},
-            status_code=400,
-        )
+        return JSONResponse({"error": "Invalid task_type. Use 'solve' or 'concept'."}, status_code=400)
+
+    payload = build_payload(req, system_prompt)
+    result = await call_gemini_api(payload)
+
+    # 存入上下文
+    conversation_history.append(f"User: {req.prompt}")
+    conversation_history.append(f"AI: {result}")
+
+    return JSONResponse({"result": result})
 
 
 @app.get("/")
 def root():
-    return {"message": "Ollama backend (httpx + Async Stream) running!"}
+    return {"message": "Gemini backend running with API key!"}
