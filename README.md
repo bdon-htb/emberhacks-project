@@ -5,7 +5,7 @@ If you want to run backend please do the following:
 cd ~/emberhacks-project
 python3 -m venv venv
 source venv/bin/activate
-pip install fastapi uvicorn requests
+pip install fastapi uvicorn requests httpx
 uvicorn ollamaService:app --reload
 ```
 
