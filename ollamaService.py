@@ -7,7 +7,6 @@ import os
 
 app = FastAPI(title="Gemini Backend (httpx + Async Stream)")
 
-# 你的 Gemini API key —— 推荐放环境变量
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "<YOUR_GEMINI_API_KEY>")
 GEMINI_API_URL = (
     "https://generativelanguage.googleapis.com/v1beta/models/"
@@ -25,7 +24,6 @@ class GenerateRequest(BaseModel):
 
 
 def build_payload(req: GenerateRequest, system_prompt: str):
-    """构建 Gemini 请求体"""
     context = "\n".join(conversation_history[-10:])
     full_prompt = f"{system_prompt}\n\nContext:\n{context}\n\nUser: {req.prompt.strip()}"
     return {
@@ -38,14 +36,12 @@ def build_payload(req: GenerateRequest, system_prompt: str):
 
 
 async def call_gemini_api(payload):
-    """直接调用 Gemini API（非流式）"""
     url = f"{GEMINI_API_URL}?key={GEMINI_API_KEY}"
     async with httpx.AsyncClient() as client:
         resp = await client.post(url, headers={"Content-Type": "application/json"}, json=payload)
     if resp.status_code != 200:
         raise RuntimeError(f"Gemini API error {resp.status_code}: {resp.text}")
     data = resp.json()
-    # 提取回答
     try:
         return data["candidates"][0]["content"]["parts"][0]["text"]
     except Exception:
@@ -54,7 +50,6 @@ async def call_gemini_api(payload):
 
 @app.post("/generate")
 async def generate(req: GenerateRequest):
-    """根据 task_type 调用 Gemini"""
     if not GEMINI_API_KEY or GEMINI_API_KEY.startswith("<"):
         return JSONResponse({"error": "Missing or invalid API key"}, status_code=400)
 
@@ -70,7 +65,6 @@ async def generate(req: GenerateRequest):
     payload = build_payload(req, system_prompt)
     result = await call_gemini_api(payload)
 
-    # 存入上下文
     conversation_history.append(f"User: {req.prompt}")
     conversation_history.append(f"AI: {result}")
 
@@ -80,3 +74,4 @@ async def generate(req: GenerateRequest):
 @app.get("/")
 def root():
     return {"message": "Gemini backend running with API key!"}
+
