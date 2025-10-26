@@ -6,18 +6,6 @@ from enum import Enum
 
 import cfg
 
-AUTOCOMPLETE_SYSTEM_PROMPT = (
-    "The user is providing a partial sentence or phrase. "
-    "Your task is to generate only the continuation that would naturally follow. "
-    "Do not repeat or modify any of the existing text. "
-    "Return only the additional completion itself, with no restatement, explanation, or formatting."
-)
-
-REVISE_SYSTEM_PROMPT = (
-    "Revise the provided text to improve grammar, clarity, and naturalness. "
-    "Add or adjust wording only when it is strictly necessary to make the text clear or coherent. "
-    "Do not include definitions, explanations, or extra details beyond what is required for clarity."
-)
 
 app = FastAPI(title="Gemini Backend")
 
@@ -83,9 +71,9 @@ async def generate(req: GenerateRequest):
         raise HTTPException(status_code=500, detail="API_KEY is not set")
         
     if req.task_type == Task.AUTOCOMPLETE:
-        return await call_gemini(AUTOCOMPLETE_SYSTEM_PROMPT, req)
+        return await call_gemini(cfg.AUTOCOMPLETE_SYSTEM_PROMPT, req)
     elif req.task_type == Task.REVISE:
-        return await call_gemini(REVISE_SYSTEM_PROMPT, req)
+        return await call_gemini(cfg.REVISE_SYSTEM_PROMPT, req)
     else:
         return JSONResponse(
             {"error": "Invalid task_type. Use 'autocomplete' or 'revise'."},
