@@ -9,20 +9,21 @@
     "https://www.googleapis.com/auth/drive.addons.metadata.readonly",
     "https://www.googleapis.com/auth/drive.file",
     "https://www.googleapis.com/auth/documents.currentonly",
-    "https://www.googleapis.com/auth/script.locale"],
+    "https://www.googleapis.com/auth/script.locale",
+    "https://www.googleapis.com/auth/script.external_request"],
   "runtimeVersion": "V8",
   "addOns": {
     "common": {
-      "name": "Cats",
-      "logoUrl": "https://www.gstatic.com/images/icons/material/system/1x/pets_black_48dp.png",
+      "name": "EmberComplete",
+      "logoUrl": "https://i.ibb.co/wFH96rQK/image.png",
       "useLocaleFromApp": true,
       "homepageTrigger": {
         "runFunction": "onHomepage",
         "enabled": true
       },
       "universalActions": [{
-        "label": "Learn more about Cataas",
-        "openLink": "https://cataas.com"
+        "label": "Github Repo",
+        "openLink": "https://github.com/bdon-htb/emberhacks-project"
       }]
     },
 
