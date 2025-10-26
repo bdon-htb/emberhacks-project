@@ -1,15 +1,15 @@
 # emberhacks-project
 
-If you want to run backend please do the following:
-```
-cd ~/emberhacks-project
-python3 -m venv venv
-source venv/bin/activate
-pip install fastapi uvicorn requests httpx
-uvicorn ollamaService:app --reload
-```
+## Running the Development Server
 
-Also making sure you have ollama and qwen3:1.7b on your local, if you don't, run the following command:
-```
-ollama run qwen3:1.7b
-```
+Follow these steps to run the backend locally and expose it via ngrok.
+
+1. Open two terminal windows or tabs.
+2. In both terminals, navigate to the project’s server directory:
+   cd path/to/your/project/server
+3. In the first terminal, start the FastAPI server:
+   uvicorn main:app --host 0.0.0.0 --port 8000
+4. In the second terminal, run ngrok to expose the local server:
+   ngrok http 8000
+5. ngrok will display a public forwarding URL (e.g. https://example.ngrok-free.app). Use this URL to access your FastAPI app remotely.
+
