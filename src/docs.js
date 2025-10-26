@@ -84,6 +84,7 @@ function makeAPIRequest(selection, contextBefore, contextAfter, mode) {
     }
     try {
       responseJSON = JSON.parse(UrlFetchApp.fetch(url, options));
+      console.log(responseJSON)
     } catch (e) {
       return {
         status:-1,
@@ -169,8 +170,8 @@ function processReplace(mode) {
   //   ctn = ctn.getParent();
   // }
 
-
-  replaceActiveSel(mode == AUTOCOMPLETE ? response + selection : response)
+  console.log(selection + response);
+  replaceActiveSel(mode == AUTOCOMPLETE ? (selection + response)  : response)
 
 
 
