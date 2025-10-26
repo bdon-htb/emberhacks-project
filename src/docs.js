@@ -21,7 +21,11 @@ function onHomepage(ev) {
     .setHeader(CardService.newCardHeader()
       .setTitle("Welcome to EmberComplete")
       .setSubtitle("Notetaking, upgraded.")
+      .setImageUrl("https://i.ibb.co/wFH96rQK/image.png")
+      .setImageStyle(CardService.ImageStyle.CIRCLE)
     )
+
+
     .addSection(CardService.newCardSection()
       .setHeader(getProp("status"))
       .addWidget(reviseBtn)

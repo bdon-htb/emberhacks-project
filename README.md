@@ -13,3 +13,5 @@ Follow these steps to run the backend locally and expose it via ngrok.
    ngrok http 8000
 5. ngrok will display a public forwarding URL (e.g. https://example.ngrok-free.app). Use this URL to access your FastAPI app remotely.
 
+The server expects a .env file with the key value pair GEMINI_API_KEY={YOUR_KEY_HERE}
+
